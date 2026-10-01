@@ -1,8 +1,8 @@
-# RadiumWMPF MMKV 解密与 JSONL 镜像工具
+# mmkv_decryptor - RadiumWMPF MMKV 解密工具
 
-该工具读取本地 RadiumWMPF MMKV 存储，完成 AES-CFB 解密、MMKV 追加记录解析，并可将结果导出为高保真 JSONL 镜像。它不再假设存储标识必须是微信 AppID 格式，应用目录名也不需要与存储标识一致。
+该工具读取本地 RadiumWMPF MMKV 存储，完成 AES-CFB 解密、MMKV 追加记录解析，并可将结果导出为高保真 JSONL 镜像。
 
-工具输出的是实际解析值，导出的 JSON、JSONL 和终端输出可能包含令牌、用户标识及其他敏感数据。
+**数据安全声明：导出的 JSON、JSONL 和终端输出可能包含令牌、用户标识及其他敏感数据！**
 
 ## 环境
 
@@ -58,16 +58,3 @@ storage = dump_storage(
 )
 export_jsonl(storage, Path("analysis.jsonl"))
 ```
-
-旧的 `dump_app_storage(appid, ...)`、`extract_session(appid, ...)`、`SessionCredentials.appid` 和 `StorageDump.appid` 保留为兼容入口。
-
-## 实现依据
-
-- AES 模式：CFB-128。
-- 密钥：存储标识的偶数索引字符，UTF-8 编码后截断或以 NUL 补齐到 16 字节。
-- IV：同名 `.crc` 文件偏移 12 的 16 字节。
-- 主文件前 4 字节：小端有效负载长度。
-- 解密记录：自动尝试常见记录偏移，按 MMKV 官方 `MiniPBCoder::decodeOneMap` 的 key/value 长度前缀顺序解析。
-- 追加语义：同名 key 的后续记录覆盖前值，value 长度为 0 的记录删除该 key；镜像保留全部历史记录。
-- `.crc` 元信息：按官方 `MMKVMetaInfo` 布局读取 CRC、version、sequence、IV、actual size 和 flags。
-- 类型边界：通用 MMKV value 不自描述调用侧类型；本工具仅对已确认的 RadiumWMPF `dataType/data` 包装生成 `decoded_value`。
